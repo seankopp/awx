@@ -34,25 +34,3 @@
     dest: "{{ docker_compose_dir }}/SECRET_KEY"
     mode: 0600
   register: awx_secret_key
-
-- block:
-    - name: Start the containers
-      docker_compose:
-        project_src: "{{ docker_compose_dir }}"
-        restarted: "{{ awx_compose_config is changed or awx_secret_key is changed }}"
-      register: awx_compose_start
-
-    - name: Update CA trust in awx_web container
-      command: docker exec awx_web '/usr/bin/update-ca-trust'
-      when: awx_compose_config.changed or awx_compose_start.changed
-
-    - name: Update CA trust in awx_task container
-      command: docker exec awx_task '/usr/bin/update-ca-trust'
-      when: awx_compose_config.changed or awx_compose_start.changed
-
-    - name: Create Preload data
-      command: docker exec awx_task bash -c "/usr/bin/awx-manage create_preload_data"
-      when: create_preload_data|bool
-      register: cdo
-      changed_when: "'added' in cdo.stdout"
-  when: compose_start_containers|bool
